@@ -1,5 +1,23 @@
-<canvas id="canvas"></canvas>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Scan</title>
+<style>
+body {
+  margin: 0;
+  background: black;
+}
+canvas {
+  width: 100vw;
+  height: 100vh;
+}
+</style>
+</head>
+<body>
+
 <video id="video" autoplay playsinline style="display:none;"></video>
+<canvas id="canvas"></canvas>
 
 <script>
 const video = document.getElementById('video');
@@ -19,16 +37,14 @@ function draw() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
 
-  let scale = 50; // размер пикселей
+  let scale = 50; // увеличили размер пикселей
 
   let w = canvas.width / scale;
   let h = canvas.height / scale;
 
-  // Рисуем без зеркалирования
-  ctx.save();                     // сохраняем текущие настройки
-  ctx.scale(-1, 1);               // переворачиваем по горизонтали
-  ctx.drawImage(video, -w, 0, w, h); // смещаем влево на -w, чтобы корректно отобразить
-  ctx.restore();                  // восстанавливаем настройки
+  // рисуем видео без зеркалирования
+  ctx.setTransform(1, 0, 0, 1, 0, 0); // сбрасываем трансформацию
+  ctx.drawImage(video, 0, 0, w, h);
 
   let imageData = ctx.getImageData(0, 0, w, h);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -50,3 +66,6 @@ function draw() {
 
 draw();
 </script>
+
+</body>
+</html>
