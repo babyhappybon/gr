@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Pixel QR Effect</title>
+<title>Pixel Camera</title>
 <style>
 body { margin:0; background:black; overflow:hidden; }
 canvas { display:block; }
@@ -22,15 +22,15 @@ navigator.mediaDevices.getUserMedia({ video: { facingMode:"user" } })
 .catch(() => alert("Camera access denied"));
 
 const blocksX = 40;
-const blocksY = 40;
+const blocksY = 30;
 
 function draw() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
 
-  const scale = Math.floor(Math.min(canvas.width / blocksX, canvas.height / blocksY));
-  const offsetX = Math.floor((canvas.width - blocksX * scale)/2);
-  const offsetY = Math.floor((canvas.height - blocksY * scale)/2);
+  const scale = Math.min(canvas.width / blocksX, canvas.height / blocksY);
+  const offsetX = (canvas.width - blocksX * scale)/2;
+  const offsetY = (canvas.height - blocksY * scale)/2;
 
   ctx.drawImage(video, 0, 0, blocksX, blocksY);
   const data = ctx.getImageData(0,0,blocksX,blocksY).data;
