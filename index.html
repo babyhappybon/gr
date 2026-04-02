@@ -1,5 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Scan</title>
+<style>
+body { margin:0; background:black; }
+canvas { width:100vw; height:100vh; display:block; }
+video { display:none; }
+</style>
+</head>
+<body>
+<video id="video" autoplay playsinline></video>
 <canvas id="canvas"></canvas>
-<video id="video" autoplay playsinline style="display:none;"></video>
 
 <script>
 const video = document.getElementById('video');
@@ -7,41 +19,33 @@ const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
 navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
-.then(stream => {
-  video.srcObject = stream;
-  video.play();
-})
-.catch(err => {
-  alert("Camera access denied");
-});
+.then(stream => { video.srcObject = stream; video.play(); })
+.catch(err => { alert("Camera access denied"); });
 
 function draw() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
 
-  let scale = 50; // размер пикселей
+  let scale = 100; // очень крупные пиксели
+  let w = Math.floor(canvas.width / scale);
+  let h = Math.floor(canvas.height / scale);
 
-  let w = canvas.width / scale;
-  let h = canvas.height / scale;
-
-  // Рисуем без зеркалирования
-  ctx.save();                     // сохраняем текущие настройки
-  ctx.scale(-1, 1);               // переворачиваем по горизонтали
-  ctx.drawImage(video, -w, 0, w, h); // смещаем влево на -w, чтобы корректно отобразить
-  ctx.restore();                  // восстанавливаем настройки
-
+  // рисуем видео в уменьшенном разрешении
+  ctx.drawImage(video, 0, 0, w, h);
   let imageData = ctx.getImageData(0, 0, w, h);
+
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+  // убираем зеркалирование, переворачивая колонки
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       let i = (y * w + x) * 4;
       let r = imageData.data[i];
-      let g = imageData.data[i + 1];
-      let b = imageData.data[i + 2];
+      let g = imageData.data[i+1];
+      let b = imageData.data[i+2];
 
       ctx.fillStyle = `rgb(${r},${g},${b})`;
-      ctx.fillRect(x * scale, y * scale, scale, scale);
+      ctx.fillRect((w-1-x)*scale, y*scale, scale, scale);
     }
   }
 
@@ -50,3 +54,5 @@ function draw() {
 
 draw();
 </script>
+</body>
+</html>
