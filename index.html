@@ -2,54 +2,100 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Pixel Camera Fullscreen</title>
+<title>Scan</title>
 <style>
-body { margin:0; background:black; overflow:hidden; }
-canvas { display:block; width:100vw; height:100vh; }
-video { display:none; }
+body {
+  margin: 0;
+  background: black;
+  overflow: hidden;
+}
+canvas {
+  display: block;
+}
 </style>
 </head>
 <body>
-<video id="video" autoplay playsinline></video>
+
+<video id="video" autoplay playsinline style="display:none;"></video>
 <canvas id="canvas"></canvas>
+
 <script>
 const video = document.getElementById('video');
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
-navigator.mediaDevices.getUserMedia({ video: { facingMode:"user" } })
-.then(stream => { video.srcObject = stream; video.play(); })
-.catch(() => alert("Camera access denied"));
+// Получаем камеру
+navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+.then(stream => {
+  video.srcObject = stream;
+  video.play();
+})
+.catch(err => {
+  alert("Camera access denied");
+});
 
-const blocksX = 40;
-const blocksY = 30;
-
+// Основная функция рисования
 function draw() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+  const scale = 20; // размер пикселя
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
 
-  const scaleX = canvas.width / blocksX;
-  const scaleY = canvas.height / blocksY;
-  const scale = Math.min(scaleX, scaleY);
+  if (vw === 0 || vh === 0) {
+    requestAnimationFrame(draw);
+    return;
+  }
 
-  const drawWidth = scale * blocksX;
-  const drawHeight = scale * blocksY;
-  const offsetX = (canvas.width - drawWidth) / 2;
-  const offsetY = (canvas.height - drawHeight) / 2;
+  // Рассчитываем размер канваса под окно
+  const cw = window.innerWidth;
+  const ch = window.innerHeight;
 
-  ctx.drawImage(video, 0, 0, blocksX, blocksY);
-  const data = ctx.getImageData(0,0,blocksX,blocksY).data;
+  canvas.width = cw;
+  canvas.height = ch;
 
-  ctx.clearRect(0,0,canvas.width,canvas.height);
+  // Сохраняем пропорции видео
+  const aspectVideo = vw / vh;
+  const aspectCanvas = cw / ch;
 
-  for(let y=0; y<blocksY; y++){
-    for(let x=0; x<blocksX; x++){
-      const i = (y*blocksX + x)*4;
-      const r = data[i];
-      const g = data[i+1];
-      const b = data[i+2];
+  let drawWidth, drawHeight;
+  if (aspectCanvas > aspectVideo) {
+    drawHeight = ch;
+    drawWidth = ch * aspectVideo;
+  } else {
+    drawWidth = cw;
+    drawHeight = cw / aspectVideo;
+  }
+
+  // Рисуем видео на скрытом канвасе с нужными размерами
+  const tempCanvas = document.createElement('canvas');
+  tempCanvas.width = drawWidth / scale;
+  tempCanvas.height = drawHeight / scale;
+  const tempCtx = tempCanvas.getContext('2d');
+
+  // Зеркалим изображение горизонтально
+  tempCtx.save();
+  tempCtx.translate(tempCanvas.width, 0);
+  tempCtx.scale(-1, 1);
+  tempCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
+  tempCtx.restore();
+
+  const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+
+  ctx.clearRect(0, 0, cw, ch);
+
+  // Центрируем изображение на канвасе
+  const offsetX = (cw - drawWidth) / 2;
+  const offsetY = (ch - drawHeight) / 2;
+
+  // Рисуем "пиксели"
+  for (let y = 0; y < tempCanvas.height; y++) {
+    for (let x = 0; x < tempCanvas.width; x++) {
+      const i = (y * tempCanvas.width + x) * 4;
+      const r = imageData.data[i];
+      const g = imageData.data[i + 1];
+      const b = imageData.data[i + 2];
+
       ctx.fillStyle = `rgb(${r},${g},${b})`;
-      ctx.fillRect(offsetX + x*scale, offsetY + y*scale, scale, scale);
+      ctx.fillRect(offsetX + x * scale, offsetY + y * scale, scale, scale);
     }
   }
 
@@ -58,5 +104,6 @@ function draw() {
 
 draw();
 </script>
+
 </body>
 </html>
