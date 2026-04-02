@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Scan</title>
+<title>Pixel QR Effect</title>
 <style>
 body { margin:0; background:black; overflow:hidden; }
 canvas { display:block; }
@@ -21,26 +21,28 @@ navigator.mediaDevices.getUserMedia({ video: { facingMode:"user" } })
 .then(stream => { video.srcObject = stream; video.play(); })
 .catch(() => alert("Camera access denied"));
 
+const blocksX = 40;
+const blocksY = 40;
+
 function draw() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
 
-  const pixelsX = 40;
-  const pixelsY = 30;
+  const scale = Math.floor(Math.min(canvas.width / blocksX, canvas.height / blocksY));
+  const offsetX = Math.floor((canvas.width - blocksX * scale)/2);
+  const offsetY = Math.floor((canvas.height - blocksY * scale)/2);
 
-  const scale = Math.min(canvas.width / pixelsX, canvas.height / pixelsY);
-  const offsetX = (canvas.width - pixelsX*scale)/2;
-  const offsetY = (canvas.height - pixelsY*scale)/2;
-
-  ctx.drawImage(video, 0, 0, pixelsX, pixelsY);
-  const data = ctx.getImageData(0,0,pixelsX,pixelsY).data;
+  ctx.drawImage(video, 0, 0, blocksX, blocksY);
+  const data = ctx.getImageData(0,0,blocksX,blocksY).data;
 
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  for(let y=0; y<pixelsY; y++){
-    for(let x=0; x<pixelsX; x++){
-      const i = (y*pixelsX+x)*4;
-      const r = data[i], g = data[i+1], b = data[i+2];
+  for(let y=0; y<blocksY; y++){
+    for(let x=0; x<blocksX; x++){
+      const i = (y*blocksX + x)*4;
+      const r = data[i];
+      const g = data[i+1];
+      const b = data[i+2];
       ctx.fillStyle = `rgb(${r},${g},${b})`;
       ctx.fillRect(offsetX + x*scale, offsetY + y*scale, scale, scale);
     }
