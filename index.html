@@ -4,54 +4,43 @@
 <meta charset="UTF-8">
 <title>Scan</title>
 <style>
-body {
-  margin: 0;
-  background: black;
-}
-canvas {
-  width: 100vw;
-  height: 100vh;
-}
+body { margin:0; background:black; overflow:hidden; }
+canvas { display:block; }
+video { display:none; }
 </style>
 </head>
 <body>
-
-<video id="video" autoplay playsinline style="display:none;"></video>
+<video id="video" autoplay playsinline></video>
 <canvas id="canvas"></canvas>
-
 <script>
 const video = document.getElementById('video');
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
-navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+navigator.mediaDevices.getUserMedia({ video: { facingMode:"user" } })
 .then(stream => { video.srcObject = stream; video.play(); })
-.catch(err => { alert("Camera access denied"); });
+.catch(() => alert("Camera access denied"));
 
 function draw() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
 
-  const pixelsX = 10;
-  const pixelsY = 20;
-
+  const pixelsX = 40;
+  const pixelsY = 30;
   const scaleX = canvas.width / pixelsX;
   const scaleY = canvas.height / pixelsY;
 
   ctx.drawImage(video, 0, 0, pixelsX, pixelsY);
-  let imageData = ctx.getImageData(0, 0, pixelsX, pixelsY);
+  const data = ctx.getImageData(0, 0, pixelsX, pixelsY).data;
 
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  for (let y = 0; y < pixelsY; y++) {
-    for (let x = 0; x < pixelsX; x++) {
-      let i = (y * pixelsX + x) * 4;
-      let r = imageData.data[i];
-      let g = imageData.data[i + 1];
-      let b = imageData.data[i + 2];
-
+  for(let y=0; y<pixelsY; y++){
+    for(let x=0; x<pixelsX; x++){
+      const i = (y*pixelsX+x)*4;
+      const r = data[i], g = data[i+1], b = data[i+2];
       ctx.fillStyle = `rgb(${r},${g},${b})`;
-      ctx.fillRect(x * scaleX, y * scaleY, scaleX, scaleY);
+      ctx.fillRect(x*scaleX, y*scaleY, scaleX, scaleY);
     }
   }
 
@@ -60,6 +49,5 @@ function draw() {
 
 draw();
 </script>
-
 </body>
 </html>
