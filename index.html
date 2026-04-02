@@ -34,9 +34,18 @@ navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
   alert("Camera access denied");
 });
 
+// Фильтр для пикселей
+function applyFilter(r, g, b) {
+  const factor = 1.2; // контраст
+  r = Math.min(255, r * factor + 30); 
+  g = Math.min(255, g * factor); 
+  b = Math.min(255, b * factor - 20); 
+  return [r, g, b];
+}
+
 // Основная функция рисования
 function draw() {
-  const scale = 40; // размер пикселя
+  const scale = 40; // базовый размер пикселя
   const vw = video.videoWidth;
   const vh = video.videoHeight;
 
@@ -45,14 +54,12 @@ function draw() {
     return;
   }
 
-  // Рассчитываем размер канваса под окно
   const cw = window.innerWidth;
   const ch = window.innerHeight;
 
   canvas.width = cw;
   canvas.height = ch;
 
-  // Сохраняем пропорции видео
   const aspectVideo = vw / vh;
   const aspectCanvas = cw / ch;
 
@@ -65,13 +72,11 @@ function draw() {
     drawHeight = cw / aspectVideo;
   }
 
-  // Рисуем видео на скрытом канвасе с нужными размерами
   const tempCanvas = document.createElement('canvas');
   tempCanvas.width = drawWidth / scale;
   tempCanvas.height = drawHeight / scale;
   const tempCtx = tempCanvas.getContext('2d');
 
-  // Зеркалим изображение горизонтально
   tempCtx.save();
   tempCtx.translate(tempCanvas.width, 0);
   tempCtx.scale(-1, 1);
@@ -82,11 +87,13 @@ function draw() {
 
   ctx.clearRect(0, 0, cw, ch);
 
-  // Центрируем изображение на канвасе
   const offsetX = (cw - drawWidth) / 2;
   const offsetY = (ch - drawHeight) / 2;
 
-  // Рисуем "пиксели"
+  // зоны: центр - детальная, боковые - крупные квадраты
+  const centerWidth = drawWidth * 0.5;
+  const sideWidth = (drawWidth - centerWidth) / 2;
+
   for (let y = 0; y < tempCanvas.height; y++) {
     for (let x = 0; x < tempCanvas.width; x++) {
       const i = (y * tempCanvas.width + x) * 4;
@@ -94,8 +101,23 @@ function draw() {
       const g = imageData.data[i + 1];
       const b = imageData.data[i + 2];
 
-      ctx.fillStyle = `rgb(${r},${g},${b})`;
-      ctx.fillRect(offsetX + x * scale, offsetY + y * scale, scale, scale);
+      let blockSize;
+      let fillStyle;
+
+      // Определяем, центр или боковая зона
+      if (x * scale > sideWidth && x * scale < sideWidth + centerWidth) {
+        // центр: применяем фильтр
+        blockSize = scale;
+        const [fr, fg, fb] = applyFilter(r, g, b);
+        fillStyle = `rgb(${fr},${fg},${fb})`;
+      } else {
+        // боковые зоны: крупные квадраты, случайные цвета для «мозаики/QR»
+        blockSize = scale * 2;
+        fillStyle = Math.random() > 0.5 ? "#000" : "#fff";
+      }
+
+      ctx.fillStyle = fillStyle;
+      ctx.fillRect(offsetX + x * blockSize, offsetY + y * blockSize, blockSize, blockSize);
     }
   }
 
