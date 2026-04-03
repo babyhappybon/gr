@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Scan QR-style Ultra Clean</title>
+<title>QR-style Edge Worms</title>
 <style>
 body {
   margin: 0;
@@ -50,12 +50,12 @@ function drawQR(x,y,size){
   ctx.fillRect(x+border+gap,y+border+gap,inner,inner);
 }
 
-// Генерация крайне редких черных пикселей
-let edgeBlack = [];
+// Генерация «гусениц» по краям
+let edgeWorms = [];
 let qrExclusion = [];
 
-function initEdgeBlack(cols, rows, qrSize){
-  edgeBlack = [];
+function initEdgeWorms(cols, rows, qrSize){
+  edgeWorms = [];
   qrExclusion = [
     {x:0, y:0}, 
     {x:cols-qrSize, y:0}, 
@@ -63,21 +63,22 @@ function initEdgeBlack(cols, rows, qrSize){
     {x:cols-qrSize, y:rows-qrSize}
   ];
   
-  const centerX = cols/2, centerY = rows/2;
-  const safeRadius = Math.min(cols, rows)/1.8; // зона чистого центра
-
+  const margin = Math.floor(Math.min(cols, rows)/8); // где будут гусеницы
   for(let y=0;y<rows;y++){
     for(let x=0;x<cols;x++){
-      const dx = x-centerX, dy = y-centerY;
-      const dist = Math.sqrt(dx*dx + dy*dy);
-      const prob = Math.max(0, (dist - safeRadius)/safeRadius) * 0.05; // крайне редкие пиксели
-      if(Math.random() < prob){
-        // Исключаем QR-зоны
+      // рамка по краям
+      if(x<margin || x>=cols-margin || y<margin || y>=rows-margin){
+        // не заходить на QR-углы
         let safe = true;
         for(let q of qrExclusion){
           if(x>=q.x && x<q.x+qrSize && y>=q.y && y<q.y+qrSize){ safe=false; break;}
         }
-        if(safe) edgeBlack.push({x,y});
+        if(safe){
+          // создаем связные блоки, как «гусеницы»
+          if(Math.random()<0.6){
+            edgeWorms.push({x,y});
+          }
+        }
       }
     }
   }
@@ -93,8 +94,8 @@ function draw(){
 
   const aspectVideo=vw/vh, aspectCanvas=cw/ch;
   let drawWidth, drawHeight;
-  if(aspectCanvas>aspectVideo){ drawHeight=ch; drawWidth=ch*aspectVideo; }
-  else{ drawWidth=cw; drawHeight=cw/aspectVideo; }
+  if(aspectCanvas>aspectVideo){ drawHeight=ch; drawWidth=ch*aspectVideo;}
+  else{ drawWidth=cw; drawHeight=cw/aspectVideo;}
 
   const tempCanvas=document.createElement('canvas');
   tempCanvas.width=Math.ceil(drawWidth/pixelSize);
@@ -120,7 +121,7 @@ function draw(){
   const pxH=drawHeight/rows;
 
   const qrSize=Math.min(7,Math.floor(cols/8));
-  if(edgeBlack.length===0) initEdgeBlack(cols, rows, qrSize);
+  if(edgeWorms.length===0) initEdgeWorms(cols, rows, qrSize);
 
   // Рисуем видео с фильтром
   for(let y=0;y<rows;y++){
@@ -133,14 +134,14 @@ function draw(){
     }
   }
 
-  // Крайне редкие черные пиксели по краям
+  // Рисуем «гусеницы» по краям
   ctx.fillStyle="#000";
-  edgeBlack.forEach(p=>{
+  edgeWorms.forEach(p=>{
     ctx.fillRect(offsetX+p.x*pxW, offsetY+p.y*pxH, pxW, pxH);
   });
 
   // QR-углы
-  const qrDrawSize=Math.min(120, drawWidth/5);
+  const qrDrawSize=Math.min(120,drawWidth/5);
   drawQR(offsetX, offsetY, qrDrawSize);
   drawQR(offsetX+drawWidth-qrDrawSize, offsetY, qrDrawSize);
   drawQR(offsetX, offsetY+drawHeight-qrDrawSize, qrDrawSize);
