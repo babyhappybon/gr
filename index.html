@@ -144,15 +144,37 @@ function drawFrame() {
     }
   }
   
-  // Рисуем QR-квадраты по углам экрана
-  const qrSize = 120;
-  
-  drawQR(0, 0, qrSize);
-  drawQR(cw - qrSize, 0, qrSize);
-  drawQR(0, ch - qrSize, qrSize);
-  drawQR(cw - qrSize, ch - qrSize, qrSize);
-  
-  requestAnimationFrame(drawFrame);
+ 
+  // 1. рисуем видео внутри квадрата
+  for (let py = 0; py < size; py += scale) {
+    for (let px = 0; px < size; px += scale) {
+      const tx = Math.floor(px / size * tempCanvas.width);
+      const ty = Math.floor(py / size * tempCanvas.height);
+      const i = (ty * tempCanvas.width + tx) * 4;
+
+      const r = imageData.data[i];
+      const g = imageData.data[i + 1];
+      const b = imageData.data[i + 2];
+
+      ctx.fillStyle = rgb(${r},${g},${b});
+      ctx.fillRect(x + px, y + py, scale, scale);
+    }
+  }
+
+  // 2. вырезаем центр
+  ctx.globalCompositeOperation = "destination-out";
+  ctx.fillRect(innerX, innerY, innerSize, innerSize);
+  ctx.globalCompositeOperation = "source-over";
+
+  // 3. внутренний черный квадрат
+  ctx.fillStyle = "#000";
+  ctx.fillRect(innerX, innerY, innerSize, innerSize);
+
+  // 4. внешняя рамка
+  ctx.fillRect(x, y, size, outerLine);
+  ctx.fillRect(x, y + size - outerLine, size, outerLine);
+  ctx.fillRect(x, y, outerLine, size);
+  ctx.fillRect(x + size - outerLine, y, outerLine, size);
 }
 
 video.addEventListener('loadeddata', () => {
