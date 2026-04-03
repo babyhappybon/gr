@@ -123,8 +123,9 @@ function draw() {
 
   ctx.clearRect(0, 0, cw, ch);
 
-  const offsetX = (cw - drawWidth) / 2;
-  const offsetY = (ch - drawHeight) / 2;
+  // Центрирование с округлением, чтобы нижние пиксели совпадали с видео
+  const offsetX = Math.round((cw - drawWidth) / 2);
+  const offsetY = Math.round((ch - drawHeight) / 2);
 
   // Пиксельный рендер
   for (let y = 0; y < tempCanvas.height; y++) {
@@ -147,20 +148,13 @@ function draw() {
     }
   }
 
-  // ✅ QR углы РОВНО по углам видео
+  // QR углы строго по границам видео
   const qrSize = Math.min(120, drawWidth / 5);
 
-  // Верхний левый
-  drawQR(offsetX, offsetY, qrSize);
-
-  // Верхний правый
-  drawQR(offsetX + drawWidth - qrSize, offsetY, qrSize);
-
-  // Нижний левый
-  drawQR(offsetX, offsetY + drawHeight - qrSize, qrSize);
-
-  // Нижний правый
-  drawQR(offsetX + drawWidth - qrSize, offsetY + drawHeight - qrSize, qrSize);
+  drawQR(offsetX, offsetY, qrSize); // верхний левый
+  drawQR(offsetX + drawWidth - qrSize, offsetY, qrSize); // верхний правый
+  drawQR(offsetX, offsetY + drawHeight - qrSize, qrSize); // нижний левый
+  drawQR(offsetX + drawWidth - qrSize, offsetY + drawHeight - qrSize, qrSize); // нижний правый
 
   requestAnimationFrame(draw);
 }
