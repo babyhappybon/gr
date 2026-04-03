@@ -32,7 +32,7 @@ navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
 })
 .catch(() => alert("Camera access denied"));
 
-// Фильтр
+// Мрачный фильтр
 function applyFilter(r, g, b) {
   let nr = r / 255;
   let ng = g / 255;
@@ -56,7 +56,7 @@ function applyFilter(r, g, b) {
   return [nr * 255, ng * 255, nb * 255];
 }
 
-// QR-угол (рамка → зазор → центр)
+// QR-угол
 function drawQR(x, y, size) {
   const border = size * 0.2;
   const gap = size * 0.15;
@@ -64,20 +64,16 @@ function drawQR(x, y, size) {
 
   ctx.fillStyle = "#000";
 
-  // Рамка
   ctx.fillRect(x, y, size, border);
   ctx.fillRect(x, y + size - border, size, border);
   ctx.fillRect(x, y, border, size);
   ctx.fillRect(x + size - border, y, border, size);
 
-  // Центр
   const innerX = x + border + gap;
   const innerY = y + border + gap;
-
   ctx.fillRect(innerX, innerY, inner, inner);
 }
 
-// Рендер
 function draw() {
   const pixelSize = 35;
   const vw = video.videoWidth;
@@ -123,21 +119,18 @@ function draw() {
 
   ctx.clearRect(0, 0, cw, ch);
 
-  // Центрирование
   const offsetX = Math.round((cw - drawWidth) / 2);
   const offsetY = Math.round((ch - drawHeight) / 2);
 
-  // Точное количество колонок и рядов для нижнего ряда
   const cols = Math.floor(drawWidth / pixelSize);
   const rows = Math.floor(drawHeight / pixelSize);
   const pxW = drawWidth / cols;
   const pxH = drawHeight / rows;
 
-  // Пиксельный рендер
+  // Пиксели видео с фильтром
   for (let y = 0; y < rows; y++) {
     for (let x = 0; x < cols; x++) {
       const i = (y * tempCanvas.width + x) * 4;
-
       const r = imageData.data[i];
       const g = imageData.data[i + 1];
       const b = imageData.data[i + 2];
@@ -145,22 +138,28 @@ function draw() {
       const [fr, fg, fb] = applyFilter(r, g, b);
 
       ctx.fillStyle = `rgb(${fr}, ${fg}, ${fb})`;
-      ctx.fillRect(
-        offsetX + x * pxW,
-        offsetY + y * pxH,
-        pxW,
-        pxH
-      );
+      ctx.fillRect(offsetX + x * pxW, offsetY + y * pxH, pxW, pxH);
+
+      // Добавляем "черные пиксели по краям"
+      const centerX = cols / 2;
+      const centerY = rows / 2;
+      const dx = Math.abs(x - centerX) / centerX;
+      const dy = Math.abs(y - centerY) / centerY;
+      const distanceFactor = Math.max(dx, dy);
+
+      if (Math.random() < distanceFactor * 0.7) { // вероятность зависит от расстояния до центра
+        ctx.fillStyle = "#000";
+        ctx.fillRect(offsetX + x * pxW, offsetY + y * pxH, pxW, pxH);
+      }
     }
   }
 
-  // QR углы строго по видео
+  // QR углы
   const qrSize = Math.min(120, drawWidth / 5);
-
-  drawQR(offsetX, offsetY, qrSize); // верхний левый
-  drawQR(offsetX + drawWidth - qrSize, offsetY, qrSize); // верхний правый
-  drawQR(offsetX, offsetY + drawHeight - qrSize, qrSize); // нижний левый
-  drawQR(offsetX + drawWidth - qrSize, offsetY + drawHeight - qrSize, qrSize); // нижний правый
+  drawQR(offsetX, offsetY, qrSize);
+  drawQR(offsetX + drawWidth - qrSize, offsetY, qrSize);
+  drawQR(offsetX, offsetY + drawHeight - qrSize, qrSize);
+  drawQR(offsetX + drawWidth - qrSize, offsetY + drawHeight - qrSize, qrSize);
 
   requestAnimationFrame(draw);
 }
