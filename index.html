@@ -12,45 +12,25 @@ body {
 canvas {
   display: block;
 }
-.info {
-  position: fixed;
-  bottom: 20px;
-  left: 20px;
-  color: white;
-  background: rgba(0,0,0,0.5);
-  padding: 5px 10px;
-  border-radius: 5px;
-  font-family: monospace;
-  font-size: 12px;
-  z-index: 100;
-}
 </style>
 </head>
 <body>
 
 <video id="video" autoplay playsinline style="display:none;"></video>
 <canvas id="canvas"></canvas>
-<div class="info" id="info">Загрузка камеры...</div>
 
 <script>
 const video = document.getElementById('video');
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-const infoDiv = document.getElementById('info');
 
 // Камера
 navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
 .then(stream => {
   video.srcObject = stream;
   video.play();
-  infoDiv.textContent = "Камера работает ✅";
-  infoDiv.style.background = "rgba(0,255,0,0.5)";
 })
-.catch(err => {
-  console.error("Ошибка камеры:", err);
-  infoDiv.textContent = "Ошибка доступа к камере ❌";
-  infoDiv.style.background = "rgba(255,0,0,0.5)";
-});
+.catch(() => alert("Camera access denied"));
 
 // Фильтр
 function applyFilter(r, g, b) {
@@ -73,14 +53,10 @@ function applyFilter(r, g, b) {
   ng = ng * 0.85;
   nb = nb * 0.95 + 0.02;
 
-  nr = Math.min(1, Math.max(0, nr));
-  ng = Math.min(1, Math.max(0, ng));
-  nb = Math.min(1, Math.max(0, nb));
-
-  return [Math.floor(nr * 255), Math.floor(ng * 255), Math.floor(nb * 255)];
+  return [nr * 255, ng * 255, nb * 255];
 }
 
-// QR-угол
+// QR-угол (рамка → зазор → центр)
 function drawQR(x, y, size) {
   const border = size * 0.2;
   const gap = size * 0.15;
@@ -97,6 +73,7 @@ function drawQR(x, y, size) {
   // Центр
   const innerX = x + border + gap;
   const innerY = y + border + gap;
+
   ctx.fillRect(innerX, innerY, inner, inner);
 }
 
@@ -146,53 +123,49 @@ function draw() {
 
   ctx.clearRect(0, 0, cw, ch);
 
+  // Центрирование
   const offsetX = Math.round((cw - drawWidth) / 2);
   const offsetY = Math.round((ch - drawHeight) / 2);
 
-  const cols = tempCanvas.width;
-  const rows = tempCanvas.height;
+  // Точное количество колонок и рядов для нижнего ряда
+  const cols = Math.floor(drawWidth / pixelSize);
+  const rows = Math.floor(drawHeight / pixelSize);
   const pxW = drawWidth / cols;
   const pxH = drawHeight / rows;
 
   // Пиксельный рендер
   for (let y = 0; y < rows; y++) {
     for (let x = 0; x < cols; x++) {
-      const i = (y * cols + x) * 4;
+      const i = (y * tempCanvas.width + x) * 4;
+
       const r = imageData.data[i];
       const g = imageData.data[i + 1];
       const b = imageData.data[i + 2];
 
       const [fr, fg, fb] = applyFilter(r, g, b);
 
-      ctx.fillStyle = `rgb(${fr}, ${fg}, ${fb})`;
+      ctx.fillStyle = rgb(${fr}, ${fg}, ${fb});
       ctx.fillRect(
         offsetX + x * pxW,
         offsetY + y * pxH,
-        pxW + 0.5,
-        pxH + 0.5
+        pxW,
+        pxH
       );
     }
   }
 
   // QR углы строго по видео
-  const qrSize = Math.min(100, drawWidth / 5, drawHeight / 5);
+  const qrSize = Math.min(120, drawWidth / 5);
 
-  drawQR(offsetX, offsetY, qrSize);
-  drawQR(offsetX + drawWidth - qrSize, offsetY, qrSize);
-  drawQR(offsetX, offsetY + drawHeight - qrSize, qrSize);
-  drawQR(offsetX + drawWidth - qrSize, offsetY + drawHeight - qrSize, qrSize);
+  drawQR(offsetX, offsetY, qrSize); // верхний левый
+  drawQR(offsetX + drawWidth - qrSize, offsetY, qrSize); // верхний правый
+  drawQR(offsetX, offsetY + drawHeight - qrSize, qrSize); // нижний левый
+  drawQR(offsetX + drawWidth - qrSize, offsetY + drawHeight - qrSize, qrSize); // нижний правый
 
   requestAnimationFrame(draw);
 }
 
-video.addEventListener('loadeddata', () => {
-  draw();
-});
-
-// Запасной вариант, если видео уже загружено
-if (video.readyState >= 2) {
-  draw();
-}
+draw();
 </script>
 
 </body>
