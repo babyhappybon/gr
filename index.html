@@ -65,7 +65,7 @@ function applyFilter(r, g, b) {
   return [nr * 255, ng * 255, nb * 255];
 }
 
-// QR-угол с правильным квадратным "кольцом"
+// QR-угол
 function drawQR(x, y, size) {
   const borderWidth = size / 5;
   
@@ -157,14 +157,18 @@ function drawFrame() {
     }
   }
   
-  // Рисуем QR-углы
-  const qrSize = Math.min(160, drawWidth / 3, drawHeight / 3);
-  const margin = 20;
+  // Рисуем QR-углы строго по углам ЭКРАНА (не видео)
+  const qrSize = 120; // фиксированный размер квадратов
+  const margin = 0; // без отступа - прямо в углах
   
-  drawQR(offsetX + margin, offsetY + margin, qrSize);
-  drawQR(offsetX + drawWidth - qrSize - margin, offsetY + margin, qrSize);
-  drawQR(offsetX + margin, offsetY + drawHeight - qrSize - margin, qrSize);
-  drawQR(offsetX + drawWidth - qrSize - margin, offsetY + drawHeight - qrSize - margin, qrSize);
+  // Верхний-левый угол
+  drawQR(0, 0, qrSize);
+  // Верхний-правый угол
+  drawQR(cw - qrSize, 0, qrSize);
+  // Нижний-левый угол
+  drawQR(0, ch - qrSize, qrSize);
+  // Нижний-правый угол
+  drawQR(cw - qrSize, ch - qrSize, qrSize);
   
   requestAnimationFrame(drawFrame);
 }
