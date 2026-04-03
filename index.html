@@ -66,8 +66,7 @@ function applyFilter(r, g, b) {
 }
 
 // QR-угол с правильным квадратным "кольцом"
-function drawQR(x, y, size, pixelSize) {
-  // Внешняя рамка
+function drawQR(x, y, size) {
   const borderWidth = size / 5;
   
   ctx.fillStyle = "#000";
@@ -100,7 +99,7 @@ function drawFrame() {
   canvas.width = cw;
   canvas.height = ch;
   
-  // Размер пикселя (чем больше — тем грубее)
+  // Размер пикселя - 35px
   const pixelSize = 35;
   
   // Вычисляем размеры видео с сохранением пропорций
@@ -119,15 +118,17 @@ function drawFrame() {
   const offsetX = (cw - drawWidth) / 2;
   const offsetY = (ch - drawHeight) / 2;
   
-  // Создаем временный canvas для пикселизации
+  // Количество пикселей по горизонтали и вертикали
+  const pixelCols = Math.ceil(drawWidth / pixelSize);
+  const pixelRows = Math.ceil(drawHeight / pixelSize);
+  
+  // Создаем временный canvas для захвата видео
   const tempCanvas = document.createElement('canvas');
-  const pixelCols = Math.floor(drawWidth / pixelSize);
-  const pixelRows = Math.floor(drawHeight / pixelSize);
   tempCanvas.width = pixelCols;
   tempCanvas.height = pixelRows;
   const tempCtx = tempCanvas.getContext('2d');
   
-  // Рисуем видео на временном canvas (с зеркальным отражением)
+  // Рисуем видео на временный canvas (с зеркальным отражением)
   tempCtx.save();
   tempCtx.translate(tempCanvas.width, 0);
   tempCtx.scale(-1, 1);
@@ -141,9 +142,9 @@ function drawFrame() {
   for (let row = 0; row < pixelRows; row++) {
     for (let col = 0; col < pixelCols; col++) {
       const idx = (row * pixelCols + col) * 4;
-      let r = imageData.data[idx];
-      let g = imageData.data[idx + 1];
-      let b = imageData.data[idx + 2];
+      let r = imageData.data[idx] || 0;
+      let g = imageData.data[idx + 1] || 0;
+      let b = imageData.data[idx + 2] || 0;
       
       // Применяем фильтр
       const [filteredR, filteredG, filteredB] = applyFilter(r, g, b);
@@ -158,10 +159,12 @@ function drawFrame() {
   
   // Рисуем QR-углы
   const qrSize = Math.min(160, drawWidth / 3, drawHeight / 3);
-  drawQR(offsetX, offsetY, qrSize, pixelSize);
-  drawQR(offsetX + drawWidth - qrSize, offsetY, qrSize, pixelSize);
-  drawQR(offsetX, offsetY + drawHeight - qrSize, qrSize, pixelSize);
-  drawQR(offsetX + drawWidth - qrSize, offsetY + drawHeight - qrSize, qrSize, pixelSize);
+  const margin = 20;
+  
+  drawQR(offsetX + margin, offsetY + margin, qrSize);
+  drawQR(offsetX + drawWidth - qrSize - margin, offsetY + margin, qrSize);
+  drawQR(offsetX + margin, offsetY + drawHeight - qrSize - margin, qrSize);
+  drawQR(offsetX + drawWidth - qrSize - margin, offsetY + drawHeight - qrSize - margin, qrSize);
   
   requestAnimationFrame(drawFrame);
 }
