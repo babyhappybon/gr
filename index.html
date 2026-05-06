@@ -76,6 +76,69 @@ function drawQR(x, y, size) {
   ctx.fillRect(innerX, innerY, inner, inner);
 }
 
+// НОВОЕ: QR-змейки по бокам
+function drawQRNoise(offsetX, offsetY, drawWidth, drawHeight, pxW, pxH, cols, rows) {
+
+  const centerStart = cols * 0.28;
+  const centerEnd = cols * 0.72;
+
+  ctx.fillStyle = "#000";
+
+  for (let y = 0; y < rows; y++) {
+
+    let leftWave = Math.floor(
+      3 + Math.sin(y * 0.45) * 2 + Math.random() * 2
+    );
+
+    let rightWave = Math.floor(
+      3 + Math.cos(y * 0.4) * 2 + Math.random() * 2
+    );
+
+    // ЛЕВАЯ СТОРОНА
+    for (let x = 0; x < leftWave; x++) {
+
+      // случайные пропуски для "QR"-эффекта
+      if (Math.random() > 0.15) {
+        ctx.fillRect(
+          offsetX + x * pxW,
+          offsetY + y * pxH,
+          pxW,
+          pxH
+        );
+      }
+    }
+
+    // ПРАВАЯ СТОРОНА
+    for (let x = cols - rightWave; x < cols; x++) {
+
+      if (x > centerEnd && Math.random() > 0.15) {
+        ctx.fillRect(
+          offsetX + x * pxW,
+          offsetY + y * pxH,
+          pxW,
+          pxH
+        );
+      }
+    }
+
+    // Дополнительные QR-квадраты
+    for (let x = 0; x < cols; x++) {
+
+      const inCenter = x > centerStart && x < centerEnd;
+
+      if (!inCenter && Math.random() > 0.93) {
+
+        ctx.fillRect(
+          offsetX + x * pxW,
+          offsetY + y * pxH,
+          pxW,
+          pxH
+        );
+      }
+    }
+  }
+}
+
 // Основной рендер
 function draw() {
   const pixelSize = 35;
@@ -143,6 +206,18 @@ function draw() {
       ctx.fillRect(offsetX + x * pxW, offsetY + y * pxH, pxW, pxH);
     }
   }
+
+  // НОВОЕ: QR-шум по бокам
+  drawQRNoise(
+    offsetX,
+    offsetY,
+    drawWidth,
+    drawHeight,
+    pxW,
+    pxH,
+    cols,
+    rows
+  );
 
   // Рисуем QR-углы
   const qrSize = Math.min(120, drawWidth / 5);
