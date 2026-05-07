@@ -76,10 +76,13 @@ function drawQR(x, y, size) {
   ctx.fillRect(innerX, innerY, inner, inner);
 }
 
-// Хаотичные QR-пиксели по краям
-function drawEdgePixels(offsetX, offsetY, cols, rows, pxW, pxH) {
+// СТАТИЧНЫЕ QR-пиксели
+let edgePixels = [];
 
-  ctx.fillStyle = "#000";
+// Создаём один раз
+function generateEdgePixels(cols, rows) {
+
+  edgePixels = [];
 
   const centerStartX = cols * 0.28;
   const centerEndX = cols * 0.72;
@@ -91,7 +94,6 @@ function drawEdgePixels(offsetX, offsetY, cols, rows, pxW, pxH) {
 
     for (let x = 0; x < cols; x++) {
 
-      // Чистый центр для лица
       const inCenter =
         x > centerStartX &&
         x < centerEndX &&
@@ -100,7 +102,6 @@ function drawEdgePixels(offsetX, offsetY, cols, rows, pxW, pxH) {
 
       if (inCenter) continue;
 
-      // Только ближе к краям
       const nearEdge =
         x < 5 ||
         x > cols - 6 ||
@@ -109,23 +110,34 @@ function drawEdgePixels(offsetX, offsetY, cols, rows, pxW, pxH) {
 
       if (!nearEdge) continue;
 
-      // Редкие хаотичные квадраты
       if (Math.random() > 0.93) {
 
-        ctx.fillRect(
-          offsetX + x * pxW,
-          offsetY + y * pxH,
-          pxW,
-          pxH
-        );
+        edgePixels.push({ x, y });
       }
     }
+  }
+}
+
+// Рисуем статичные пиксели
+function drawEdgePixels(offsetX, offsetY, pxW, pxH) {
+
+  ctx.fillStyle = "#000";
+
+  for (const p of edgePixels) {
+
+    ctx.fillRect(
+      offsetX + p.x * pxW,
+      offsetY + p.y * pxH,
+      pxW,
+      pxH
+    );
   }
 }
 
 // Основной рендер
 function draw() {
   const pixelSize = 35;
+
   const vw = video.videoWidth;
   const vh = video.videoHeight;
 
@@ -155,6 +167,7 @@ function draw() {
 
   // Временный холст для уменьшенного изображения
   const tempCanvas = document.createElement('canvas');
+
   tempCanvas.width = Math.ceil(drawWidth / pixelSize);
   tempCanvas.height = Math.ceil(drawHeight / pixelSize);
 
@@ -164,7 +177,15 @@ function draw() {
   tempCtx.save();
   tempCtx.translate(tempCanvas.width, 0);
   tempCtx.scale(-1, 1);
-  tempCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
+
+  tempCtx.drawImage(
+    video,
+    0,
+    0,
+    tempCanvas.width,
+    tempCanvas.height
+  );
+
   tempCtx.restore();
 
   const imageData = tempCtx.getImageData(
@@ -185,7 +206,12 @@ function draw() {
   const pxW = drawWidth / cols;
   const pxH = drawHeight / rows;
 
-  // Рисуем пиксели
+  // Генерируем пиксели только 1 раз
+  if (edgePixels.length === 0) {
+    generateEdgePixels(cols, rows);
+  }
+
+  // Рисуем пиксели видео
   for (let y = 0; y < rows; y++) {
 
     for (let x = 0; x < cols; x++) {
@@ -210,12 +236,10 @@ function draw() {
     }
   }
 
-  // QR-пиксели по краям
+  // Рисуем СТАТИЧНЫЕ QR-пиксели
   drawEdgePixels(
     offsetX,
     offsetY,
-    cols,
-    rows,
     pxW,
     pxH
   );
@@ -236,8 +260,12 @@ draw();
 
 // Поддержка ресайза окна
 window.addEventListener('resize', () => {
+
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
+
+  // Перегенерация при изменении размера
+  edgePixels = [];
 });
 
 </script>
